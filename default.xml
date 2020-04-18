@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+<opencv_storage>
+<Settings>
+  <!-- Resolution of the camera -->
+  <cameraResolution_width>640</cameraResolution_width>
+  <cameraResolution_height>360</cameraResolution_height>
+
+  <!-- The horizontal fov(radian) and vertical fov(radian) of the camera -->
+  <camera_fov_width>0.767945</camera_fov_width>             
+  <camera_fov_height>0.593412</camera_fov_height> <!-- We don't need both when the camera has square pixels-->
+
+  <!-- Resolution of the display -->
+  <displayResolution_width>1280</displayResolution_width>
+  <displayResolution_height>720</displayResolution_height>
+  
+  <!-- Size of display in m-->
+  <display_width> 0.16 </display_width>                                                                  
+  <display_height> 0.09 </display_height>
+
+  <!-- WCS is the camera coordinate system -->
+  <!-- Position(m) and Orientation(degree, euler angles, direction follows right hand rule)  of display in the WCS -->
+  <display_x>0</display_x>
+  <display_y>0</display_y>
+  <display_z>-0.16</display_z>                             
+  
+  <display_roll>0</display_roll> <!-- theta about X axis -->
+  <display_pitch>50</display_pitch> <!-- theta about Z axis -->
+  <display_yaw>0</display_yaw> <!-- theta about Y axis -->
+
+  <!-- Position of the eye in WCS -->
+  <eyePosition_X>0</eyePosition_X>
+  <eyePosition_Y>0</eyePosition_Y>
+  <eyePosition_Z>-0.9</eyePosition_Z>
+
+  <!-- Device to use as See-thru-camera -->
+  <device>"/dev/video4"</device> 
+
+  <!-- Input video format (MJPG/YUV) -->
+  <image_format>"MJPG"</image_format>
+  
+  <!-- Output image will be optimized for
+  this distance (in meter) from the camera -->
+  <targetPlaneDistance>2</targetPlaneDistance>
+
+  <!-- OpenCV window configuration -->
+  <!-- Position of window from main display (in pixels)
+  these values will depend on how the displays are configured 
+  and the resolution of display connected to the PC -->
+  <window_offset_x>1920</window_offset_x>
+  <window_offset_y>0</window_offset_y>
+
+  <!-- Choose between ViewCropper and VerticesWarp algorithm -->
+  <!-- ViewCropper does not support roll and yaw angle -->
+  <algorithm>"VerticesWarp"</algorithm>
+
+</Settings>
+</opencv_storage>
