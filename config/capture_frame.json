@@ -1,0 +1,4 @@
+{
+    "device":"/dev/video0",
+    "camera_config":"/config/camera/usbcam.json"
+}

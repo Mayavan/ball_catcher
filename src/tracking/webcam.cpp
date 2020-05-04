@@ -34,7 +34,11 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <fstream>
 #include <stdexcept>
+
+#include "debug.h"
+#include "macro.h"
 
 #define CLEAR(x) memset(&(x), 0, sizeof(x))
 
@@ -61,8 +65,8 @@ static int xioctl(int fh, unsigned long int request, void *arg) {
   (unsigned char)(((color) > 0xFF) ? 0xff : (((color) < 0) ? 0 : (color)))
 
 static void v4lconvert_yuyv_to_rgb24(const unsigned char *src,
-                                     unsigned char *dest, int width, int height,
-                                     int stride) {
+                                     unsigned char *dest, int width,
+                                     int height) {
   int j;
 
   while (--height >= 0) {
@@ -84,22 +88,21 @@ static void v4lconvert_yuyv_to_rgb24(const unsigned char *src,
       *dest++ = CLIP(src[2] + u1);
       src += 4;
     }
-    src += stride - (width * 2);
   }
 }
 /*******************************************************************/
 
-Webcam::Webcam(const string &device, int width, int height,
-               const string &pixelformat)
-    : device(device), xres(width), yres(height), pixel_format(pixelformat) {
+Webcam::Webcam(nlohmann::json &camera_config,
+               const std::string &device)
+    : device(device), camera_config(camera_config) {
+
   open_device();
   init_device();
-  // xres and yres are set to the actual resolution provided by the cam
 
   // frame stored as RGB888 (ie, RGB24)
-  image_frame.width = xres;
-  image_frame.height = yres;
-  image_frame.size = xres * yres * 3;
+  image_frame.width = camera_config["v4l2-settings"]["resolution"]["width"];
+  image_frame.height = camera_config["v4l2-settings"]["resolution"]["height"];
+  image_frame.size = image_frame.width * image_frame.height * 3;
   image_frame.data = (unsigned char *)malloc(image_frame.size * sizeof(char));
 
   start_capturing();
@@ -167,12 +170,14 @@ bool Webcam::read_frame() {
 
   assert(buf.index < n_buffers);
 
-  if (pixel_format == "MJPG") {
+  if (camera_config["v4l2-settings"]["format"] == MJPG) {
     image_frame.data = (unsigned char *)buffers[buf.index].data;
     image_frame.mjpg_buffer_size = buffers[buf.index].size;
-  } else if (pixel_format == "YUV") {
-    v4lconvert_yuyv_to_rgb24((unsigned char *)buffers[buf.index].data,
-                             image_frame.data, xres, yres, stride);
+  } else if (camera_config["v4l2-settings"]["format"] == YUV) {
+    v4lconvert_yuyv_to_rgb24(
+        (unsigned char *)buffers[buf.index].data, image_frame.data,
+        camera_config["v4l2-settings"]["resolution"]["width"],
+        camera_config["v4l2-settings"]["resolution"]["height"]);
   }
 
   if (-1 == xioctl(fd, VIDIOC_QBUF, &buf)) throw runtime_error("VIDIOC_QBUF");
@@ -301,21 +306,22 @@ void Webcam::init_device(void) {
     /* Errors ignored. */
   }
 
+  init_control();
+
   CLEAR(fmt);
 
   fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
   if (force_format) {
-    fmt.fmt.pix.width = xres;
-    fmt.fmt.pix.height = yres;
-    if (pixel_format == "MJPG") {
+    fmt.fmt.pix.width = camera_config["v4l2-settings"]["resolution"]["width"];
+    fmt.fmt.pix.height = camera_config["v4l2-settings"]["resolution"]["height"];
+    using namespace std;
+    if (!string(camera_config["v4l2-settings"]["format"]).compare(MJPG)) {
       fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_MJPEG;
-    } else if (pixel_format == "YUV") {
+    } else if (!string(camera_config["v4l2-settings"]["format"])
+                    .compare(YUV)) {
       fmt.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
     }
     fmt.fmt.pix.field = V4L2_FIELD_INTERLACED;
-
-    if (-1 == xioctl(fd, VIDIOC_S_FMT, &fmt))
-      throw runtime_error("VIDIOC_S_FMT");
 
     if ((fmt.fmt.pix.pixelformat != V4L2_PIX_FMT_YUYV) &&
         (fmt.fmt.pix.pixelformat != V4L2_PIX_FMT_MJPEG))
@@ -325,18 +331,18 @@ void Webcam::init_device(void) {
           "Webcam does not support this format. Support for more format need "
           "to be added!");
 
-    /* Note VIDIOC_S_FMT may change width and height. */
-    xres = fmt.fmt.pix.width;
-    yres = fmt.fmt.pix.height;
+    if (-1 == xioctl(fd, VIDIOC_S_FMT, &fmt))
+      throw runtime_error("VIDIOC_S_FMT");
 
-    stride = fmt.fmt.pix.bytesperline;
+    /* Note VIDIOC_S_FMT may change width and height. */
+    camera_config["v4l2-settings"]["resolution"]["width"] = fmt.fmt.pix.width;
+    camera_config["v4l2-settings"]["resolution"]["height"] = fmt.fmt.pix.height;
 
   } else {
     /* Preserve original settings as set by v4l2-ctl for example */
     if (-1 == xioctl(fd, VIDIOC_G_FMT, &fmt))
       throw runtime_error("VIDIOC_G_FMT");
   }
-
   init_mmap();
 }
 
@@ -375,4 +381,24 @@ void Webcam::stop_capturing(void) {
   type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
   if (-1 == xioctl(fd, VIDIOC_STREAMOFF, &type))
     throw runtime_error("VIDIOC_STREAMOFF");
+}
+
+void Webcam::init_control(void) {
+  set_control(V4L2_CID_BRIGHTNESS, camera_config["v4l2-settings"]["brighness"]);
+  set_control(V4L2_CID_CONTRAST, camera_config["v4l2-settings"]["contrast"]);
+  set_control(V4L2_CID_SATURATION,
+              camera_config["v4l2-settings"]["saturation"]);
+  set_control(V4L2_CID_HUE, camera_config["v4l2-settings"]["hue"]);
+  set_control(V4L2_CID_GAMMA, camera_config["v4l2-settings"]["gamma"]);
+  set_control(V4L2_CID_GAIN, camera_config["v4l2-settings"]["gain"]);
+}
+
+void Webcam::set_control(int control_id, int control_value) {
+  struct v4l2_control control;
+  CLEAR(control);
+  control.id = control_id;
+  control.value = control_value;
+
+  if (-1 == xioctl(fd, VIDIOC_S_CTRL, &control))
+    throw runtime_error("VIDIOC_S_FMT");
 }

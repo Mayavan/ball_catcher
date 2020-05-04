@@ -4,6 +4,8 @@
 #include <memory>  // unique_ptr
 #include <string>
 
+#include "nlohmann/json.hpp"
+
 struct buffer {
   void *data;
   size_t size;
@@ -19,8 +21,7 @@ struct Image {
 
 class Webcam {
  public:
-  Webcam(const std::string &device = "/dev/video0", int width = 640,
-         int height = 480, const std::string &pixelformat = "MJPG");
+  Webcam(nlohmann::json &camera_config, const std::string &device = "/dev/video0");
 
   ~Webcam();
 
@@ -51,16 +52,17 @@ class Webcam {
 
   bool read_frame();
 
+  void init_control();
+  void set_control(int control_id, int control_value);
+
   std::string device;
-  std::string pixel_format;
+  nlohmann::json camera_config;
   int fd;
 
   Image image_frame;
   struct buffer *buffers;
   unsigned int n_buffers;
 
-  size_t xres, yres;
-  size_t stride;
 
   bool force_format = true;
 };
