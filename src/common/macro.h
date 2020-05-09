@@ -19,4 +19,17 @@
 #define LOW_THRES "low-threshold"
 #define HIGH_THRES "high-threshold"
 
+#ifdef ENABLE_GPU 
+
+#define bs cv::cuda
+
+namespace bc
+{
+typedef cv::cuda::GpuMat Mat;
+}
+#else
+#define bs cv
+
+#endif
+
 #endif  // _COMMON_MACROS_H_

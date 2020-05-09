@@ -1,4 +1,5 @@
 {
-    "device":"/dev/video0",
-    "camera_config":"/config/camera/usbcam.json"
+    "device":"/dev/video4",
+    "camera_config":"/config/camera/usbcam.json",
+    "ball-diameter":80
 }

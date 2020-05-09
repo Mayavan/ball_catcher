@@ -55,9 +55,11 @@ int main(int argc, char *argv[]) {
   cv::Mat image;
   bool first = true;
 
+  cv::VideoWriter writer("captured.avi",CV_FOURCC('M','J','P','G'),10, cv::Size(640,360));
+
   int i = 0;
   static auto start = GET_TIME();
-  while (i < ITERATIONS) {
+  while (true) {
     frame = webcam.frame();
     if (!std::string(camera_config["v4l2-settings"]["format"]).compare(YUV)) {
       image = cv::Mat(frame.height, frame.width, CV_8UC3, (void *)frame.data);
@@ -72,7 +74,11 @@ int main(int argc, char *argv[]) {
     cv::imshow("Video", image);
     cv::waitKey(1);
     i++;
+    if(i%20==0)
+      writer.write(image);
   }
+
+  writer.release();
   auto end = GET_TIME();
   auto elapsed = IN_MS(end - start);
   LOG_INFO("FPS = " << (float)(1000 * ITERATIONS / elapsed));
