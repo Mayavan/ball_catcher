@@ -3,7 +3,7 @@
         "brighness":100,
         "contrast":20,
         "saturation":100,
-        "hue":-2000,
+        "hue":0,
         "gamma":80,
         "gain":32,
         "format":"MJPG",
@@ -15,8 +15,8 @@
     },
     "color-threshold":{
         "blue-ball":{
-            "low-threshold":[56,45,78],
-            "high-threshold":[79,156,190]
+            "low-threshold":[0,133,127],
+            "high-threshold":[9,255,255]
         }
     },
     "intrinsic-matrix":[5.0943711058390852e+02, 0, 320, 0, 5.0943711058390852e+02, 180, 0, 0, 1]

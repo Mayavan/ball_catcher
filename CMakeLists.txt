@@ -21,8 +21,9 @@ endif()
 find_package(OpenCV REQUIRED)
 include_directories( ${OpenCV_INCLUDE_DIRS} )
 include_directories(src/common)
-include_directories(src/tracking)
+include_directories(src/controller)
 include_directories(src/ext)
+include_directories(src/tracking)
 
 add_executable (capture_frames
                 src/capture_frames.cpp
@@ -32,7 +33,14 @@ add_executable (capture_frames
 add_executable (ball_tracker
                 src/ball_tracker.cpp
                 src/tracking/ObjectDetector.cpp
+                src/tracking/TrackerWindow.cpp
                 src/tracking/webcam.cpp
+                )
+
+add_executable (serial_test
+                src/move_to_point.cpp
+                src/controller/SpunkController.cpp
+                src/controller/Serial.cpp
                 )
                 
 
